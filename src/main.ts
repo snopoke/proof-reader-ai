@@ -1,5 +1,5 @@
 import * as core from '@actions/core';
-import parseDiff, { File } from "parse-diff";
+import parseDiff from "parse-diff";
 import { generateAICommentsForMarkdownFiles } from "./generateAICommentsForMarkdownFiles";
 import { getGithubClient } from "./getGithubClient";
 
@@ -34,6 +34,8 @@ async function main() {
   if (!filteredDiff.length) {
     console.log("No files matched");
     return;
+  } else {
+    console.log(`Matched ${filteredDiff.length} files`)
   }
 
   const comments = await generateAICommentsForMarkdownFiles({
@@ -55,5 +57,5 @@ async function main() {
 
 main().catch((error) => {
   console.error("Error:", error);
-  process.exit(1);
+  core.setFailed(error.message);
 });

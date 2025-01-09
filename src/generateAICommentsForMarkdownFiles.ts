@@ -12,19 +12,19 @@ Instructions:
         "comment": "<comment targeting one line>",
         "lineNumber": <line_number>,
         "suggestion": "<The text to replace the existing line with. Leave empty, when no suggestion is applicable, must be related to the comment>",
-        "originalLine": "<The content of the line the comment apply to>"
+        "originalLine": "<The content of the line the comment apply to. Must be only that line in the diff, not the full sentence>"
     }
 ]
 
-- returned result must only contains valid json
-- Propose change to text and code.
+- returned result must only contain valid json
+- Propose change to text and code
 - Fix typo, grammar and spelling
 - ensure short sentence
 - ensure one idea per sentence
-- simplify complex sentence.
+- simplify complex sentence
 - No more than one comment per line
 - One comment can address several issues
-- Provide comments and suggestions ONLY if there is something to improve or fix, otherwise return an empty array.
+- Provide comments and suggestions ONLY if there is something to improve or fix, otherwise return an empty array
 
 Git diff of the article to review:
 
@@ -128,20 +128,13 @@ export function checkReviewItem(
   reviewItem: ReviewItem,
   diff: string
 ): ReviewItem | null {
-  const diffLines = diff.split("\n").map((line) => line.split("+", 1)[1]);
-  console.log(diffLines);
-  let realLineNumber = diffLines.findIndex((line) =>
+  const diffLines = diff.split("\n");
+  const realLineNumber = diffLines.findIndex((line) =>
     line.includes(reviewItem.originalLine)
   );
   if (realLineNumber === -1) {
-    realLineNumber = diffLines.findIndex((line) =>
-      // The LLM sometimes returns a full sentence instead of just the line
-      reviewItem.originalLine.includes(line)
-    );
-    if (realLineNumber === -1) {
-      console.log("Could not locate target line for:", reviewItem);
-      return null;
-    }
+    console.log("Could not locate target line for:", reviewItem);
+    return null;
   }
 
   if (realLineNumber + 1 === reviewItem.lineNumber) {
@@ -160,18 +153,19 @@ export function checkReview(review: ReviewItem[], diff: string) {
 }
 
 export async function generateAICommentsForDiff({
-  prompt,
+  promptPrefix,
   diff,
   path,
   apiKey,
   model,
 }: {
-  prompt: string;
+  promptPrefix: string,
   diff: string,
   path: string;
   model: string;
   apiKey: string;
 }): Promise<Array<{ body: string; path: string; line: number }>> {
+  const prompt = createPrompt(promptPrefix, diff);
   const aiResponse = await getAIResponse(prompt, model, apiKey);
   const checkedReview = checkReview(aiResponse, diff);
   return await getComments(checkedReview, path);
@@ -198,11 +192,10 @@ export async function generateAICommentsForMarkdownFiles({
     // @ts-expect-error - ln and ln2 exists where needed
     .map((c) => `${c.ln ? c.ln : c.ln2} ${c.content}`)
     .join("\n")}`;
-      const prompt = createPrompt(promptPrefix, diff);
       const newComments = await generateAICommentsForDiff({
         apiKey,
         diff,
-        prompt,
+        promptPrefix,
         model,
         path: file.to!,
       });

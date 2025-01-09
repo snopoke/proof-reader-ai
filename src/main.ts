@@ -31,6 +31,11 @@ async function main() {
     return regex.test(file.to ?? "");
   });
 
+  if (!filteredDiff.length) {
+    console.log("No files matched");
+    return;
+  }
+
   const comments = await generateAICommentsForMarkdownFiles({
     parsedDiff: filteredDiff,
     apiKey: OPENAI_API_KEY,

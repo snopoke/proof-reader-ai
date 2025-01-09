@@ -154,11 +154,13 @@ export function checkReview(review: ReviewItem[], diff: string) {
 
 export async function generateAICommentsForDiff({
   prompt,
+  diff,
   path,
   apiKey,
   model,
 }: {
   prompt: string;
+  diff: string,
   path: string;
   model: string;
   apiKey: string;
@@ -192,6 +194,7 @@ export async function generateAICommentsForMarkdownFiles({
       const prompt = createPrompt(promptPrefix, diff);
       const newComments = await generateAICommentsForDiff({
         apiKey,
+        diff,
         prompt,
         model,
         path: file.to!,

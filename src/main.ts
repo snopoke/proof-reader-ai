@@ -1,10 +1,11 @@
+import * as core from '@actions/core';
 import parseDiff, { File } from "parse-diff";
 import { generateAICommentsForMarkdownFiles } from "./generateAICommentsForMarkdownFiles";
 import { getGithubClient } from "./getGithubClient";
 
-const GITHUB_TOKEN: string = process.env.GITHUB_TOKEN as string;
-const OPENAI_API_KEY: string = process.env.OPENAI_API_KEY as string;
-const OPENAI_API_MODEL: string = process.env.OPENAI_API_MODEL as string;
+const GITHUB_TOKEN: string = core.getInput('GITHUB_TOKEN', {required: true});
+const OPENAI_API_KEY: string = core.getInput('OPENAI_API_KEY', {required: true});
+const OPENAI_API_MODEL: string = core.getInput('OPENAI_API_MODEL', {required: true});
 
 const githubCli = getGithubClient(GITHUB_TOKEN);
 

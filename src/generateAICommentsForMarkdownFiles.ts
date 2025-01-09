@@ -129,12 +129,18 @@ export function checkReviewItem(
   diff: string
 ): ReviewItem | null {
   const diffLines = diff.split("\n");
-  const realLineNumber = diffLines.findIndex((line) =>
+  let realLineNumber = diffLines.findIndex((line) =>
     line.includes(reviewItem.originalLine)
   );
   if (realLineNumber === -1) {
-    console.log("Could not locate target line for:", reviewItem);
-    return null;
+    realLineNumber = diffLines.findIndex((line) =>
+      // The LLM sometimes returns a full sentence instead of just the line
+      reviewItem.originalLine.includes(line)
+    );
+    if (realLineNumber === -1) {
+      console.log("Could not locate target line for:", reviewItem);
+      return null;
+    }
   }
 
   if (realLineNumber + 1 === reviewItem.lineNumber) {

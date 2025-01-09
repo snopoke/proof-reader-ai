@@ -19,6 +19,10 @@ inputs:
     description: "Regex pattern to match files for review"
     required: false
     default: "\\.mdx$"
+  prompt-prefix:
+    description: The initial instructions for the LLM indicating it's basic task.
+    required: false
+    default: Your task is to review pull requests on a technical blog.
 runs:
   using: "node20"
   main: "lib/main.js"

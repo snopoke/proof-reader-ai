@@ -7,6 +7,7 @@ const GITHUB_TOKEN: string = core.getInput('GITHUB_TOKEN', {required: true});
 const OPENAI_API_KEY: string = core.getInput('OPENAI_API_KEY', {required: true});
 const OPENAI_API_MODEL: string = core.getInput('OPENAI_API_MODEL', {required: true});
 const filePattern = core.getInput('file-pattern', {required: false});
+const promptPrefix = core.getInput('prompt-prefix', {required: false});
 
 const githubCli = getGithubClient(GITHUB_TOKEN);
 
@@ -34,6 +35,7 @@ async function main() {
     parsedDiff: filteredDiff,
     apiKey: OPENAI_API_KEY,
     model: OPENAI_API_MODEL,
+    promptPrefix,
   });
 
   if (comments.length > 0) {

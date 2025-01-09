@@ -1,8 +1,9 @@
 import parseDiff, { File } from "parse-diff";
 import OpenAI from "openai";
 
-function createPrompt(diff: string): string {
-  return `Your task is to review pull requests on a technical blog. Instructions:
+function createPrompt(promptPrefix: string, diff: string): string {
+  return `${promptPrefix}
+Instructions:
 - Do not explain what you're doing.
 - Provide the response in following JSON format, And return only the json:
 
@@ -152,17 +153,16 @@ export function checkReview(review: ReviewItem[], diff: string) {
 }
 
 export async function generateAICommentsForDiff({
-  diff,
+  prompt,
   path,
   apiKey,
   model,
 }: {
-  diff: string;
+  prompt: string;
   path: string;
   model: string;
   apiKey: string;
 }): Promise<Array<{ body: string; path: string; line: number }>> {
-  const prompt = createPrompt(diff);
   const aiResponse = await getAIResponse(prompt, model, apiKey);
   const checkedReview = checkReview(aiResponse, diff);
   return await getComments(checkedReview, path);
@@ -172,10 +172,12 @@ export async function generateAICommentsForMarkdownFiles({
   parsedDiff,
   apiKey,
   model,
+  promptPrefix,
 }: {
   parsedDiff: File[];
   apiKey: string;
   model: string;
+  promptPrefix: string;
 }): Promise<Array<{ body: string; path: string; line: number }>> {
   const comments: Array<{ body: string; path: string; line: number }> = [];
 
@@ -187,9 +189,10 @@ export async function generateAICommentsForMarkdownFiles({
     // @ts-expect-error - ln and ln2 exists where needed
     .map((c) => `${c.ln ? c.ln : c.ln2} ${c.content}`)
     .join("\n")}`;
+      const prompt = createPrompt(promptPrefix, diff);
       const newComments = await generateAICommentsForDiff({
         apiKey,
-        diff,
+        prompt,
         model,
         path: file.to!,
       });

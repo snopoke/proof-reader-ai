@@ -6,6 +6,7 @@ import { getGithubClient } from "./getGithubClient";
 const GITHUB_TOKEN: string = core.getInput('GITHUB_TOKEN', {required: true});
 const OPENAI_API_KEY: string = core.getInput('OPENAI_API_KEY', {required: true});
 const OPENAI_API_MODEL: string = core.getInput('OPENAI_API_MODEL', {required: true});
+const filePattern = core.getInput('file-pattern', {required: false});
 
 const githubCli = getGithubClient(GITHUB_TOKEN);
 
@@ -24,9 +25,9 @@ async function main() {
   }
 
   const parsedDiff = parseDiff(diff);
-
+  const regex = new RegExp(filePattern);
   const filteredDiff = parsedDiff.filter((file) => {
-    return /.mdx$/.test(file.to ?? "");
+    return regex.test(file.to ?? "");
   });
 
   const comments = await generateAICommentsForMarkdownFiles({

@@ -129,6 +129,8 @@ export function checkReviewItem(
   diff: string
 ): ReviewItem | null {
   const diffLines = diff.split("\n");
+  console.log(diff);
+  console.log(diffLines);
   let realLineNumber = diffLines.findIndex((line) =>
     line.includes(reviewItem.originalLine)
   );

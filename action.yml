@@ -20,9 +20,9 @@ inputs:
     required: false
     default: "\\.mdx$"
   prompt-prefix:
-    description: The initial instructions for the LLM indicating it's basic task.
+    description: "The initial instructions for the LLM indicating it's basic task."
     required: false
-    default: Your task is to review pull requests on a technical blog.
+    default: "Your task is to review pull requests on a technical blog."
 runs:
   using: "node20"
   main: "lib/main.js"

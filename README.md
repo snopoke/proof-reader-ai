@@ -32,3 +32,12 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_API_MODEL: "gpt-4o-mini" # Optional: defaults to "gpt-4o-mini" do not support model prior to 4
 ```
+
+# Inputs
+
+| Name | Required | Description
+| -- | -- | -- |
+| `OPENAI_API_KEY` | True | Your OpenAI API Key |
+| `OPENAI_API_MODEL` | False | The OpenAI model to use. Defaults to `gpt-4o-mini` |
+| `file-pattern` | False | The regular expression used to match files filenames for review. Defaults to `\\.mdx$` |
+| `prompt-prefix` | False | Use this to customize the instructions to the LLM. This ammends the builtin prompt. Defaults to "Your task is to review pull requests on a technical blog." |

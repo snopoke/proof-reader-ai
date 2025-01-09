@@ -11,10 +11,6 @@ inputs:
     description: "OpenAI API model."
     required: false
     default: "gpt-4o-mini"
-  exclude:
-    description: "Glob patterns to exclude files from the diff analysis"
-    required: false
-    default: ""
   file-pattern:
     description: "Regex pattern to match files for review"
     required: false

@@ -126,13 +126,14 @@ type ReviewItem = {
 
 export function checkReviewItem(
   reviewItem: ReviewItem,
-  diff: string
+  diff: string,
+  strictMatch: boolean,
 ): ReviewItem | null {
   const diffLines = diff.split("\n");
   const realLineNumber = diffLines.findIndex((line) =>
     line.includes(reviewItem.originalLine)
   );
-  if (realLineNumber === -1) {
+  if (strictMatch && realLineNumber === -1) {
     console.log("Could not locate target line for:", reviewItem);
     return null;
   }
@@ -146,9 +147,9 @@ export function checkReviewItem(
     lineNumber: realLineNumber,
   };
 }
-export function checkReview(review: ReviewItem[], diff: string) {
+export function checkReview(review: ReviewItem[], diff: string, strictMatch: boolean) {
   return review
-    .map((reviewItem) => checkReviewItem(reviewItem, diff))
+    .map((reviewItem) => checkReviewItem(reviewItem, diff, strictMatch))
     .filter((v) => v !== null);
 }
 
@@ -158,16 +159,18 @@ export async function generateAICommentsForDiff({
   path,
   apiKey,
   model,
+  strictMatch,
 }: {
   promptPrefix: string,
   diff: string,
   path: string;
   model: string;
   apiKey: string;
+  strictMatch: boolean;
 }): Promise<Array<{ body: string; path: string; line: number }>> {
   const prompt = createPrompt(promptPrefix, diff);
   const aiResponse = await getAIResponse(prompt, model, apiKey);
-  const checkedReview = checkReview(aiResponse, diff);
+  const checkedReview = checkReview(aiResponse, diff, strictMatch);
   return await getComments(checkedReview, path);
 }
 
@@ -176,11 +179,13 @@ export async function generateAICommentsForMarkdownFiles({
   apiKey,
   model,
   promptPrefix,
+  strictMatch,
 }: {
   parsedDiff: File[];
   apiKey: string;
   model: string;
   promptPrefix: string;
+  strictMatch: boolean;
 }): Promise<Array<{ body: string; path: string; line: number }>> {
   const comments: Array<{ body: string; path: string; line: number }> = [];
 
@@ -198,6 +203,7 @@ export async function generateAICommentsForMarkdownFiles({
         promptPrefix,
         model,
         path: file.to!,
+        strictMatch,
       });
       if (newComments && newComments.length > 0) {
         comments.push(...newComments);

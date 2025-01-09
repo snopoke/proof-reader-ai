@@ -20,5 +20,6 @@ ${chunk.changes
     model: "gpt-4o-mini",
     apiKey: process.env.OPENAI_API_KEY as string,
     promptPrefix: "Your task is to review pull requests on a technical blog.",
+    strictMatch: true,
   }).then(console.log);
 }

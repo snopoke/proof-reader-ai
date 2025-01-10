@@ -7,6 +7,34 @@ interface PRDetails {
   pull_number: number;
 }
 
+export class PRComment {
+  id: number;
+  user: string;
+  start_line: number | null;
+  line: number;
+  path: string;
+  body: string;
+
+  constructor(id: number, user: string, start_line: number | null, line: number, path: string, body: string) {
+    this.id = id;
+    this.user = user;
+    this.start_line = start_line;
+    this.line = line;
+    this.path = path;
+    this.body = body;
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      user: this.user,
+      startLineNumber: this.start_line || this.line,
+      endLineNumber: this.line,
+      body: this.body,
+    };
+  }
+}
+
 export const getGithubClient = (githubToken: string) => {
   const octokit = new Octokit({ auth: githubToken });
 
@@ -36,6 +64,28 @@ export const getGithubClient = (githubToken: string) => {
     return response.data;
   }
 
+  async function getComments(
+    owner: string,
+    repo: string,
+    pull_number: number
+  ): Promise<PRComment[]> {
+    const response = await octokit.pulls.listReviewComments({
+      owner,
+      repo,
+      pull_number,
+    });
+    return response.data.filter(comment => {
+      return comment.line !== undefined;
+    }).map((comment) => new PRComment(
+      comment.id,
+      comment.user.login,
+      comment.start_line || null,
+      comment.line!,
+      comment.path,
+      comment.body,
+    ));
+  }
+
   async function createReviewComment(
     owner: string,
     repo: string,
@@ -55,5 +105,6 @@ export const getGithubClient = (githubToken: string) => {
     getPRDetails,
     getDiff,
     createReviewComment,
+    getComments,
   };
 };

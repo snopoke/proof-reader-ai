@@ -1,7 +1,8 @@
 import { File } from "parse-diff";
 import OpenAI from "openai";
+import { PRComment } from "./getGithubClient";
 
-function createPrompt(promptPrefix: string, diff: string): string {
+function createPrompt(promptPrefix: string, diff: string, existingComments: PRComment[]): string {
   return `${promptPrefix}
 Instructions:
 - Do not explain what you're doing.
@@ -19,34 +20,43 @@ Instructions:
 - returned result must only contain valid json
 - Propose change to text and code
 - Fix typo, grammar and spelling
-- ensure short sentence
-- ensure one idea per sentence
-- simplify complex sentence
+- Focus on major issues rather than minor stylistic issues
 - No more than one comment per line
 - One comment can address several issues
-- Comments can span multiple lines
+- Comments can span multiple lines (use startLineNumber and endLineNumber)
+- Do not comment on lines that already have comments or repeat feedback that has already been given
 - Provide comments and suggestions ONLY if there is something to improve or fix, otherwise return an empty array
 
 Git diff of the article to review:
 
 \`\`\`diff
 ${diff}
-\`\`\``;
+\`\`\`
+
+Existing comments:${existingComments.length === 0 ? " None" : 
+`\`\`\`json
+${JSON.stringify(existingComments, null, 2)}
+\`\`\``}`;
 }
 export const getComments = async (result: ReviewItem[], path: string) => {
-  const comments = result.map((item: any) => ({
-    start_line: item.startLineNumber === item.endLineNumber ? null : item.startLineNumber,
-    line: item.endLineNumber,
-    path,
-    body: `${item.comment}${
-      item.suggestion
-        ? `
-\`\`\`suggestion
-${item.suggestion}
-\`\`\``
-        : ""
-    }`,
-  }));
+  const comments = result.map((item: any) => {
+    let comment: Record<string, any> = {
+      line: item.endLineNumber,
+      path,
+      body: `${item.comment}${
+        item.suggestion
+          ? `
+  \`\`\`suggestion
+  ${item.suggestion}
+  \`\`\``
+          : ""
+      }`,
+    };
+    if (item.startLineNumber !== item.endLineNumber) {
+      comment.start_line = item.startLineNumber;
+    }
+    return comment;
+  });
 
   return comments;
 };
@@ -131,14 +141,16 @@ export async function generateAICommentsForDiff({
   path,
   apiKey,
   model,
+  existingComments,
 }: {
   promptPrefix: string,
   diff: string,
   path: string;
   model: string;
   apiKey: string;
+  existingComments: PRComment[];
 }): Promise<Array<{ body: string; path: string; line: number }>> {
-  const prompt = createPrompt(promptPrefix, diff);
+  const prompt = createPrompt(promptPrefix, diff, existingComments);
   const aiResponse = await getAIResponse(prompt, model, apiKey);
   return await getComments(aiResponse, path);
 }
@@ -148,17 +160,22 @@ export async function generateAICommentsForMarkdownFiles({
   apiKey,
   model,
   promptPrefix,
+  existingComments
 }: {
   parsedDiff: File[];
   apiKey: string;
   model: string;
   promptPrefix: string;
+  existingComments: PRComment[];
 }): Promise<Array<{ body: string; path: string; line: number }>> {
   const comments: Array<{ body: string; path: string; line: number }> = [];
 
   for (const file of parsedDiff) {
     if (file.to === "/dev/null") continue; // Ignore deleted files
+    const fileComments = existingComments.filter(comment => comment.path == file.to);
     for (const chunk of file.chunks) {
+      const chunkStart = chunk.newStart, chunkEnd = chunk.newStart + chunk.newLines -1;
+      const chunkComments = fileComments.filter(comment => comment.line >= chunkStart && comment.line <= chunkEnd);
       const diff = `${chunk.content}
   ${chunk.changes
     // @ts-expect-error - ln and ln2 exists where needed
@@ -170,6 +187,7 @@ export async function generateAICommentsForMarkdownFiles({
         promptPrefix,
         model,
         path: file.to!,
+        existingComments: chunkComments,
       });
       if (newComments && newComments.length > 0) {
         comments.push(...newComments);

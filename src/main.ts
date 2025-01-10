@@ -39,20 +39,30 @@ async function main() {
     console.log(`Matched ${filteredDiff.length} files`)
   }
 
+  const existingComments = await githubCli.getComments(
+    prDetails.owner,
+    prDetails.repo,
+    prDetails.pull_number
+  );
+
   const comments = await generateAICommentsForMarkdownFiles({
     parsedDiff: filteredDiff,
     apiKey: OPENAI_API_KEY,
     model: OPENAI_API_MODEL,
     promptPrefix,
+    existingComments,
   });
 
   if (comments.length > 0) {
+    console.log(`Adding ${comments.length} comments`);
     await githubCli.createReviewComment(
       prDetails.owner,
       prDetails.repo,
       prDetails.pull_number,
       comments
     );
+  } else {
+    console.log("No comments to add");
   }
 }
 

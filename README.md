@@ -41,4 +41,3 @@ jobs:
 | `OPENAI_API_MODEL` | False    | The OpenAI model to use. Defaults to `gpt-4o-mini`                                                                                                          |
 | `file-pattern`     | False    | The regular expression used to match files filenames for review. Defaults to `\\.mdx$`                                                                      |
 | `prompt-prefix`    | False    | Use this to customize the instructions to the LLM. This ammends the builtin prompt. Defaults to "Your task is to review pull requests on a technical blog." |
-| `strict-match`     | False    | If true, the action require the LLM response to match the diff lines in a strict fashion. Defaults to `true`                                                |

@@ -8,11 +8,7 @@ const OPENAI_API_KEY: string = core.getInput('OPENAI_API_KEY', {required: true})
 const OPENAI_API_MODEL: string = core.getInput('OPENAI_API_MODEL', {required: true});
 const filePattern = core.getInput('file-pattern', {required: false});
 const promptPrefix = core.getInput('prompt-prefix', {required: false});
-const strictMatch = core.getBooleanInput('strict-match', {required: false});
 
-if (!strictMatch) {
-  console.log("Running with 'strict-match' off. This may result in comments being placed on the wrong line.");
-}
 
 const githubCli = getGithubClient(GITHUB_TOKEN);
 
@@ -48,7 +44,6 @@ async function main() {
     apiKey: OPENAI_API_KEY,
     model: OPENAI_API_MODEL,
     promptPrefix,
-    strictMatch,
   });
 
   if (comments.length > 0) {

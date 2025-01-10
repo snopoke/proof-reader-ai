@@ -1,4 +1,4 @@
-import parseDiff, { File } from "parse-diff";
+import { File } from "parse-diff";
 import OpenAI from "openai";
 
 function createPrompt(promptPrefix: string, diff: string): string {
@@ -10,9 +10,9 @@ Instructions:
 [
     {
         "comment": "<comment targeting one line>",
-        "lineNumber": <line_number>,
+        "startLineNumber": <line_number for the start of the comment. Must be the same as endLineNumber for single line comments>,
+        "endLineNumber": <line_number for the end of the comment. Must be the same as startLineNumber for single line comments>,
         "suggestion": "<The text to replace the existing line with. Leave empty, when no suggestion is applicable, must be related to the comment>",
-        "originalLine": "<The content of the line the comment apply to. Must be only that line in the diff, not the full sentence>"
     }
 ]
 
@@ -24,6 +24,7 @@ Instructions:
 - simplify complex sentence
 - No more than one comment per line
 - One comment can address several issues
+- Comments can span multiple lines
 - Provide comments and suggestions ONLY if there is something to improve or fix, otherwise return an empty array
 
 Git diff of the article to review:
@@ -34,7 +35,8 @@ ${diff}
 }
 export const getComments = async (result: ReviewItem[], path: string) => {
   const comments = result.map((item: any) => ({
-    line: item.lineNumber,
+    start_line: item.startLineNumber === item.endLineNumber ? null : item.startLineNumber,
+    line: item.endLineNumber,
     path,
     body: `${item.comment}${
       item.suggestion
@@ -82,8 +84,8 @@ async function getAIResponse(
                   properties: {
                     comment: { type: "string" },
                     suggestion: { type: "string" },
-                    originalLine: { type: "string" },
-                    lineNumber: { type: "number" },
+                    startLineNumber: { type: "number" },
+                    endLineNumber: { type: "number" },
                   },
                 },
               },
@@ -120,38 +122,8 @@ async function getAIResponse(
 type ReviewItem = {
   comment: string;
   suggestion: string;
-  originalLine: string;
   lineNumber: number;
 };
-
-export function checkReviewItem(
-  reviewItem: ReviewItem,
-  diff: string,
-  strictMatch: boolean,
-): ReviewItem | null {
-  const diffLines = diff.split("\n");
-  const realLineNumber = diffLines.findIndex((line) =>
-    line.includes(reviewItem.originalLine)
-  );
-  if (realLineNumber === -1) {
-    console.log("Could not locate target line for:", reviewItem);
-    return strictMatch ? null : reviewItem;
-  }
-
-  if (realLineNumber + 1 === reviewItem.lineNumber) {
-    return reviewItem;
-  }
-
-  return {
-    ...reviewItem,
-    lineNumber: realLineNumber,
-  };
-}
-export function checkReview(review: ReviewItem[], diff: string, strictMatch: boolean) {
-  return review
-    .map((reviewItem) => checkReviewItem(reviewItem, diff, strictMatch))
-    .filter((v) => v !== null);
-}
 
 export async function generateAICommentsForDiff({
   promptPrefix,
@@ -159,19 +131,16 @@ export async function generateAICommentsForDiff({
   path,
   apiKey,
   model,
-  strictMatch,
 }: {
   promptPrefix: string,
   diff: string,
   path: string;
   model: string;
   apiKey: string;
-  strictMatch: boolean;
 }): Promise<Array<{ body: string; path: string; line: number }>> {
   const prompt = createPrompt(promptPrefix, diff);
   const aiResponse = await getAIResponse(prompt, model, apiKey);
-  const checkedReview = checkReview(aiResponse, diff, strictMatch);
-  return await getComments(checkedReview, path);
+  return await getComments(aiResponse, path);
 }
 
 export async function generateAICommentsForMarkdownFiles({
@@ -179,13 +148,11 @@ export async function generateAICommentsForMarkdownFiles({
   apiKey,
   model,
   promptPrefix,
-  strictMatch,
 }: {
   parsedDiff: File[];
   apiKey: string;
   model: string;
   promptPrefix: string;
-  strictMatch: boolean;
 }): Promise<Array<{ body: string; path: string; line: number }>> {
   const comments: Array<{ body: string; path: string; line: number }> = [];
 
@@ -203,7 +170,6 @@ export async function generateAICommentsForMarkdownFiles({
         promptPrefix,
         model,
         path: file.to!,
-        strictMatch,
       });
       if (newComments && newComments.length > 0) {
         comments.push(...newComments);

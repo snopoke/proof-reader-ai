@@ -19,10 +19,6 @@ inputs:
     description: "The initial instructions for the LLM indicating it's basic task."
     required: false
     default: "Your task is to review pull requests on a technical blog."
-  strict-match:
-    description: "Whether be strict about matching comment lines returned by the LLM."
-    required: false
-    default: true
 runs:
   using: "node20"
   main: "lib/main.js"

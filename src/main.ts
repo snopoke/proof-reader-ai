@@ -8,7 +8,7 @@ const OPENAI_API_KEY: string = core.getInput('OPENAI_API_KEY', {required: true})
 const OPENAI_API_MODEL: string = core.getInput('OPENAI_API_MODEL', {required: true});
 const filePattern = core.getInput('file-pattern', {required: false});
 const promptPrefix = core.getInput('prompt-prefix', {required: false});
-const strictMatch = core.getInput('strict-match', {required: false});
+const strictMatch = core.getBooleanInput('strict-match', {required: false});
 
 if (!strictMatch) {
   console.log("Running with 'strict-match' off. This may result in comments being placed on the wrong line.");

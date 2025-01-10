@@ -133,9 +133,9 @@ export function checkReviewItem(
   const realLineNumber = diffLines.findIndex((line) =>
     line.includes(reviewItem.originalLine)
   );
-  if (strictMatch && realLineNumber === -1) {
+  if (realLineNumber === -1) {
     console.log("Could not locate target line for:", reviewItem);
-    return null;
+    return strictMatch ? null : reviewItem;
   }
 
   if (realLineNumber + 1 === reviewItem.lineNumber) {
